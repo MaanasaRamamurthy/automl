@@ -1,4 +1,5 @@
 import streamlit as st
+# from streamlit import write
 import pandas as pd
 import os
 import ydata_profiling as pdp
@@ -8,45 +9,76 @@ import subprocess
 
 
 current_dir_path = os.getcwd()
-def main(uploaded_dataset):
-    # Title for the app
+
+def create_input_fields(df, target_column):
+    input_fields = {}
+    st.subheader("Please enter your information:")
+    for column in df.columns:
+        if column != target_column:
+            if pd.api.types.is_string_dtype(df[column]):
+                input_fields[column] = st.text_input(f"{column.capitalize()}")
+            else:
+                input_fields[column] = st.number_input(f"{column.capitalize()}", value=0)
+    return input_fields
+
+def main(uploaded_dataset, target_column):
     st.title("Make a Prediction")
 
-    # Check if a dataset is uploaded
     if uploaded_dataset is None:
         st.warning("Please upload a dataset first.")
         return
 
-    # Display the uploaded dataset
     st.subheader("Uploaded Dataset:")
     st.write(uploaded_dataset)
 
-    # Create input fields based on the uploaded dataset
-    user_input = create_input_fields(uploaded_dataset)
-
-    # Create a DataFrame with user input
+    user_input = create_input_fields(uploaded_dataset, target_column)
     user_input_df = pd.DataFrame(user_input, index=[0])
 
-    # Button to trigger prediction
     if st.button("Predict"):
         st.subheader("Prediction Results:")
+        pipeline = load_model("best_model")
         prediction = predict_model(pipeline, data=user_input_df)
-        print(prediction)
         predicted_class = prediction["prediction_label"][0]
         st.write(f"Predicted Class: {predicted_class}")
-
-def create_input_fields(df):
-    input_fields = {}
-    st.subheader("Please enter your information:")
-    for column in df.columns:
-        if column != st.session_state.target_column_val:
-            # Check data type of the column and create appropriate input field
-            if pd.api.types.is_string_dtype(df[column]):
-                input_fields[column] = st.text_input(f"{column.capitalize()}")
-            else:
-                input_fields[column] = st.number_input(f"{column.capitalize()}")
-
-    return input_fields
+# def main(uploaded_dataset):
+#     # Title for the app
+#     st.title("Make a Prediction")
+#
+#     # Check if a dataset is uploaded
+#     if uploaded_dataset is None:
+#         st.warning("Please upload a dataset first.")
+#         return
+#
+#     # Display the uploaded dataset
+#     st.subheader("Uploaded Dataset:")
+#     st.write(uploaded_dataset)
+#
+#     # Create input fields based on the uploaded dataset
+#     user_input = create_input_fields(uploaded_dataset)
+#
+#     # Create a DataFrame with user input
+#     user_input_df = pd.DataFrame(user_input, index=[0])
+#
+#     # Button to trigger prediction
+#     if st.button("Predict"):
+#         st.subheader("Prediction Results:")
+#         prediction = predict_model(pipeline, data=user_input_df)
+#         print(prediction)
+#         predicted_class = prediction["prediction_label"][0]
+#         st.write(f"Predicted Class: {predicted_class}")
+#
+# def create_input_fields(df):
+#     input_fields = {}
+#     st.subheader("Please enter your information:")
+#     for column in df.columns:
+#         if column != st.session_state.target_column_val:
+#             # Check data type of the column and create appropriate input field
+#             if pd.api.types.is_string_dtype(df[column]):
+#                 input_fields[column] = st.text_input(f"{column.capitalize()}")
+#             else:
+#                 input_fields[column] = st.number_input(f"{column.capitalize()}")
+#
+#     return input_fields
 
 with st.sidebar:
     st.title("AutoStreamML")
@@ -68,10 +100,10 @@ if choice == "Upload":
 
 if choice == "Profiling":
     st.title("Automated Exploratory Data Analysis")
-    # profile_report = df.profile_report()
-    # st_profile_report(profile_report)
     profile = pdp.ProfileReport(df)
     st_profile_report(profile)
+    # html = profile.to_html()
+    # write(html, unsafe_allow_html=True)
 
 if choice == "ML":
     st.title("Machine Learning Model")
@@ -101,8 +133,14 @@ if choice == "Download":
         st.info("The model has been downloaded to your project directory.")
 
 if choice == "Test Model":
-    print("Testing")
-    print(st.session_state.target_column_val)
-    pipeline = load_model("trained_model")
-    uploaded_dataset = pd.read_csv("sourcedata.csv")
-    main(uploaded_dataset)
+    # print("Testing")
+    # print(st.session_state.target_column_val)
+    # pipeline = load_model("trained_model")
+    # uploaded_dataset = pd.read_csv("sourcedata.csv")
+    # main(uploaded_dataset)
+    if 'target_column_val' in st.session_state:
+        target_column = st.session_state.target_column_val
+        uploaded_dataset = pd.read_csv("sourcedata.csv")
+        main(uploaded_dataset, target_column)
+    else:
+        st.warning("Please train a model first to define the target column.")
